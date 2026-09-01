@@ -3,37 +3,78 @@
 namespace App\Http\Controllers;
 
 use App\Models\PesertaBpjs;
-use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PesertaBpjsController extends Controller
 {
-    // Menampilkan daftar peserta
     public function index()
     {
         $peserta = PesertaBpjs::with('user')->get();
         return view('peserta.index', compact('peserta'));
     }
 
-    // Form tambah peserta
     public function create()
     {
-        $users = User::all();
-        return view('peserta.create', compact('users'));
+        return view('peserta.create');
     }
 
-    // Menyimpan data peserta baru
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required',
+            'nama_warga' => 'required|string|max:255',
             'nomor_bpjs' => 'required|unique:peserta_bpjs',
-            'nik' => 'required|unique:peserta_bpjs',
+            'nik' => 'required|digits:16|unique:peserta_bpjs',
             'kelas_bpjs' => 'required',
+            'alamat' => 'required',
         ]);
 
-        PesertaBpjs::create($request->all());
+        PesertaBpjs::create([
+            'user_id' => Auth::id(), 
+            'nama_warga' => $request->nama_warga,
+            'nomor_bpjs' => $request->nomor_bpjs,
+            'nik' => $request->nik,
+            'kelas_bpjs' => $request->kelas_bpjs,
+            'alamat' => $request->alamat,
+        ]);
 
-        return redirect()->route('peserta.index')->with('success', 'Data peserta berhasil ditambahkan!');
+        return redirect()->route('peserta.index')->with('success', 'Data warga peserta BPJS berhasil disimpan!');
+    }
+
+    public function edit($id)
+    {
+        $peserta = PesertaBpjs::findOrFail($id);
+        return view('peserta.edit', compact('peserta'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $peserta = PesertaBpjs::findOrFail($id);
+
+        $request->validate([
+            'nama_warga' => 'required|string|max:255',
+            'nomor_bpjs' => 'required|unique:peserta_bpjs,nomor_bpjs,' . $id,
+            'nik' => 'required|digits:16|unique:peserta_bpjs,nik,' . $id,
+            'kelas_bpjs' => 'required',
+            'alamat' => 'required',
+        ]);
+
+        $peserta->update([
+            'nama_warga' => $request->nama_warga,
+            'nomor_bpjs' => $request->nomor_bpjs,
+            'nik' => $request->nik,
+            'kelas_bpjs' => $request->kelas_bpjs,
+            'alamat' => $request->alamat,
+        ]);
+
+        return redirect()->route('peserta.index')->with('success', 'Data warga peserta BPJS berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $peserta = PesertaBpjs::findOrFail($id);
+        $peserta->delete();
+
+        return redirect()->route('peserta.index')->with('success', 'Data warga peserta BPJS berhasil dihapus!');
     }
 }
